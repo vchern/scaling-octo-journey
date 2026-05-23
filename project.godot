@@ -13,7 +13,7 @@ config_version=5
 config/name="scaling-octo-journey"
 config/description="A 2D MapleStory-inspired platformer-RPG (work in progress)"
 run/main_scene="res://scenes/main.tscn"
-config/features=PackedStringArray("4.6", "Forward Plus")
+config/features=PackedStringArray("4.6", "GL Compatibility")
 
 [autoload]
 
@@ -23,3 +23,8 @@ InputBindings="*res://scripts/globals/input_bindings.gd"
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
