@@ -1,0 +1,151 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="1_player"]
+[ext_resource type="PackedScene" path="res://scenes/platforms/rope.tscn" id="2_rope"]
+
+[sub_resource type="RectangleShape2D" id="ShapeFloor"]
+size = Vector2(2400, 100)
+
+[sub_resource type="RectangleShape2D" id="ShapeWall"]
+size = Vector2(32, 140)
+
+[sub_resource type="RectangleShape2D" id="ShapeStep"]
+size = Vector2(160, 20)
+
+[sub_resource type="RectangleShape2D" id="ShapeHighPlat"]
+size = Vector2(160, 20)
+
+[sub_resource type="RectangleShape2D" id="ShapeOneWay"]
+size = Vector2(250, 20)
+
+[sub_resource type="RectangleShape2D" id="ShapeShortTop"]
+size = Vector2(80, 20)
+
+[sub_resource type="RectangleShape2D" id="ShapeTallTop"]
+size = Vector2(240, 20)
+
+[node name="Forest01" type="Node2D"]
+
+[node name="SkyBg" type="Polygon2D" parent="."]
+color = Color(0.55, 0.75, 0.95, 1)
+polygon = PackedVector2Array(-200, -200, 2700, -200, 2700, 800, -200, 800)
+
+[node name="Floor" type="StaticBody2D" parent="."]
+position = Vector2(1200, 670)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Floor"]
+shape = SubResource("ShapeFloor")
+
+[node name="Visual" type="Polygon2D" parent="Floor"]
+color = Color(0.35, 0.25, 0.15, 1)
+polygon = PackedVector2Array(-1200, -50, 1200, -50, 1200, 50, -1200, 50)
+
+[node name="Wall" type="StaticBody2D" parent="."]
+position = Vector2(2416, 550)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Wall"]
+shape = SubResource("ShapeWall")
+
+[node name="Visual" type="Polygon2D" parent="Wall"]
+color = Color(0.45, 0.3, 0.2, 1)
+polygon = PackedVector2Array(-16, -70, 16, -70, 16, 70, -16, 70)
+
+[node name="Step1" type="StaticBody2D" parent="."]
+position = Vector2(430, 550)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Step1"]
+shape = SubResource("ShapeStep")
+
+[node name="Visual" type="Polygon2D" parent="Step1"]
+color = Color(0.3, 0.6, 0.3, 1)
+polygon = PackedVector2Array(-80, -10, 80, -10, 80, 10, -80, 10)
+
+[node name="Step2" type="StaticBody2D" parent="."]
+position = Vector2(630, 470)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Step2"]
+shape = SubResource("ShapeStep")
+
+[node name="Visual" type="Polygon2D" parent="Step2"]
+color = Color(0.3, 0.6, 0.3, 1)
+polygon = PackedVector2Array(-80, -10, 80, -10, 80, 10, -80, 10)
+
+[node name="Step3" type="StaticBody2D" parent="."]
+position = Vector2(980, 390)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Step3"]
+shape = SubResource("ShapeStep")
+
+[node name="Visual" type="Polygon2D" parent="Step3"]
+color = Color(0.3, 0.6, 0.3, 1)
+polygon = PackedVector2Array(-80, -10, 80, -10, 80, 10, -80, 10)
+
+[node name="HighPlat" type="StaticBody2D" parent="."]
+position = Vector2(1180, 280)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="HighPlat"]
+shape = SubResource("ShapeHighPlat")
+
+[node name="Visual" type="Polygon2D" parent="HighPlat"]
+color = Color(0.85, 0.75, 0.4, 1)
+polygon = PackedVector2Array(-80, -10, 80, -10, 80, 10, -80, 10)
+
+[node name="OneWay" type="StaticBody2D" parent="." groups=["one_way_platforms"]]
+position = Vector2(1625, 530)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="OneWay"]
+shape = SubResource("ShapeOneWay")
+one_way_collision = true
+
+[node name="Visual" type="Polygon2D" parent="OneWay"]
+color = Color(0.8, 0.55, 0.3, 1)
+polygon = PackedVector2Array(-125, -10, 125, -10, 125, 10, -125, 10)
+
+[node name="ShortRope" parent="." instance=ExtResource("2_rope")]
+position = Vector2(820, 480)
+climb_length = 120.0
+
+[node name="ShortRopeTop" type="StaticBody2D" parent="."]
+position = Vector2(820, 430)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="ShortRopeTop"]
+shape = SubResource("ShapeShortTop")
+
+[node name="Visual" type="Polygon2D" parent="ShortRopeTop"]
+color = Color(0.4, 0.5, 0.3, 1)
+polygon = PackedVector2Array(-40, -10, 40, -10, 40, 10, -40, 10)
+
+[node name="TallRope" parent="." instance=ExtResource("2_rope")]
+position = Vector2(1850, 420)
+climb_length = 400.0
+
+[node name="TopPlatform" type="StaticBody2D" parent="."]
+position = Vector2(1850, 230)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="TopPlatform"]
+shape = SubResource("ShapeTallTop")
+
+[node name="Visual" type="Polygon2D" parent="TopPlatform"]
+color = Color(0.5, 0.45, 0.3, 1)
+polygon = PackedVector2Array(-120, -10, 120, -10, 120, 10, -120, 10)
+
+[node name="Player" parent="." instance=ExtResource("1_player")]
+position = Vector2(200, 596)

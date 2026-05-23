@@ -1,0 +1,25 @@
+# Godot 4+ specific
+.godot/
+.import/
+export.cfg
+export_presets.cfg
+
+# Mono / .NET (not used now)
+.mono/
+data_*/
+
+# Build artifacts
+builds/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*~
+
+# Claude Code config
+.claude/
