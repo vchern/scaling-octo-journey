@@ -1,0 +1,38 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scenes/mobs/bat.gd" id="1_script"]
+
+[sub_resource type="RectangleShape2D" id="BodyShape"]
+size = Vector2(28, 22)
+
+[sub_resource type="RectangleShape2D" id="HurtboxShape"]
+size = Vector2(28, 22)
+
+[sub_resource type="RectangleShape2D" id="HitboxShape"]
+size = Vector2(28, 22)
+
+[node name="Bat" type="CharacterBody2D" groups=["enemies"]]
+collision_layer = 1
+collision_mask = 0
+script = ExtResource("1_script")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("BodyShape")
+
+[node name="Hurtbox" type="Area2D" parent="."]
+collision_layer = 16
+collision_mask = 0
+monitorable = true
+monitoring = false
+
+[node name="HurtboxShape" type="CollisionShape2D" parent="Hurtbox"]
+shape = SubResource("HurtboxShape")
+
+[node name="Hitbox" type="Area2D" parent="."]
+collision_layer = 64
+collision_mask = 8
+monitorable = false
+monitoring = true
+
+[node name="HitboxShape" type="CollisionShape2D" parent="Hitbox"]
+shape = SubResource("HitboxShape")
