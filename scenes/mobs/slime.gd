@@ -10,6 +10,7 @@ extends CharacterBody2D
 @export var hit_stun_frames: int = 12
 @export var death_fade_seconds: float = 0.5
 @export var respawn_seconds: float = 3.0
+@export var xp_reward: int = 10
 
 var hp: int = 0
 var _facing: int = 1
@@ -105,9 +106,15 @@ func _die() -> void:
 		_hurtbox.monitorable = false
 	if _hitbox != null:
 		_hitbox.monitoring = false
+	_award_xp()
 	var tween := create_tween()
 	tween.tween_property(self, "modulate:a", 0.0, death_fade_seconds)
 	tween.tween_callback(_on_fade_complete)
+
+func _award_xp() -> void:
+	var player := get_tree().get_first_node_in_group(&"player")
+	if player != null and player.has_method(&"gain_xp"):
+		player.gain_xp(xp_reward)
 
 func _on_fade_complete() -> void:
 	_dead = true

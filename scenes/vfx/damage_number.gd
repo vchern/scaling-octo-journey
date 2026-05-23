@@ -4,8 +4,11 @@ extends Node2D
 @export var lifetime_seconds: float = 0.6
 
 func display(amount: int, color: Color = Color.WHITE) -> void:
+	display_text(str(amount), color)
+
+func display_text(text: String, color: Color = Color.WHITE) -> void:
 	var label := $Label as Label
-	label.text = str(amount)
+	label.text = text
 	label.add_theme_color_override(&"font_color", color)
 	var start_y := position.y
 	var tween := create_tween()

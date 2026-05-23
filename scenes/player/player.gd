@@ -42,6 +42,12 @@ enum State { IDLE, RUN, JUMP, FALL, CLIMB }
 @export var hit_knockback_horizontal: float = 250.0
 @export var hit_knockback_vertical: float = -200.0
 
+@export_group("Progression")
+@export var xp_to_next_base: int = 50
+@export var xp_to_next_per_level: int = 25
+@export var hp_per_level: int = 10
+@export var attack_per_level: int = 1
+
 @export_group("Safety")
 @export var fall_limit: float = 900.0
 @export var respawn_position: Vector2 = Vector2(200, 596)
@@ -51,6 +57,8 @@ const ONE_WAY_LAYER_BIT := 3
 var state: State = State.IDLE
 var facing: int = 1
 var hp: int = 0
+var level: int = 1
+var xp: int = 0
 var _coyote: int = 0
 var _jump_buffer: int = 0
 var _drop_through: int = 0
@@ -106,7 +114,6 @@ func _physics_process(delta: float) -> void:
 		effective_input_x = 0.0
 
 	if _hit_stun > 0:
-		# preserve knockback, only apply gravity
 		_apply_gravity(on_floor, delta)
 	else:
 		_apply_horizontal(effective_input_x, on_floor, delta)
@@ -369,7 +376,6 @@ func _check_contact_damage() -> void:
 		return
 	if _hurtbox == null:
 		return
-	# Player hurtbox doesn't actively monitor, so query enemy hitboxes via group.
 	for enemy in get_tree().get_nodes_in_group(&"enemies"):
 		if enemy == null or not is_instance_valid(enemy):
 			continue
@@ -403,3 +409,29 @@ func _spawn_damage_number(amount: int) -> void:
 	dn.global_position = global_position + Vector2(0.0, -32.0)
 	if dn.has_method(&"display"):
 		dn.display(amount, Color(1.0, 0.5, 0.5))
+
+func gain_xp(amount: int) -> void:
+	xp += amount
+	while xp >= xp_to_next_level():
+		xp -= xp_to_next_level()
+		_level_up()
+
+func xp_to_next_level() -> int:
+	return xp_to_next_base + (level - 1) * xp_to_next_per_level
+
+func _level_up() -> void:
+	level += 1
+	max_hp += hp_per_level
+	attack_damage += attack_per_level
+	hp = max_hp
+	_spawn_level_up_popup()
+
+func _spawn_level_up_popup() -> void:
+	var scene: PackedScene = load("res://scenes/vfx/damage_number.tscn")
+	if scene == null:
+		return
+	var popup := scene.instantiate() as Node2D
+	get_parent().add_child(popup)
+	popup.global_position = global_position + Vector2(0.0, -40.0)
+	if popup.has_method(&"display_text"):
+		popup.display_text("LEVEL UP!", Color(1.0, 0.85, 0.2))

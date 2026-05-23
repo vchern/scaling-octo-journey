@@ -5,12 +5,32 @@
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_script")
 
+[node name="LevelLabel" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 14.0
+offset_right = 280.0
+offset_bottom = 44.0
+text = "Lv. 1"
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+
 [node name="HPLabel" type="Label" parent="."]
 offset_left = 24.0
-offset_top = 18.0
+offset_top = 46.0
 offset_right = 280.0
-offset_bottom = 54.0
+offset_bottom = 76.0
 text = "HP: 100 / 100"
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+
+[node name="XPLabel" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 78.0
+offset_right = 280.0
+offset_bottom = 108.0
+text = "EXP: 0 / 50"
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
