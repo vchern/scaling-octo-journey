@@ -1,0 +1,63 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/inventory_panel.gd" id="1_script"]
+
+[node name="InventoryPanel" type="CanvasLayer"]
+visible = false
+script = ExtResource("1_script")
+
+[node name="Background" type="ColorRect" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0, 0, 0, 0.45)
+
+[node name="Panel" type="Panel" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -240.0
+offset_top = -200.0
+offset_right = 240.0
+offset_bottom = 200.0
+
+[node name="VBox" type="VBoxContainer" parent="Panel"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+
+[node name="Title" type="Label" parent="Panel/VBox"]
+text = "Inventory"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 24
+
+[node name="Separator1" type="HSeparator" parent="Panel/VBox"]
+
+[node name="GoldRow" type="Label" parent="Panel/VBox"]
+text = "Gold: 0"
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+
+[node name="EquippedRow" type="Button" parent="Panel/VBox"]
+text = "Equipped: —"
+flat = true
+alignment = 0
+
+[node name="Separator2" type="HSeparator" parent="Panel/VBox"]
+
+[node name="ItemsHeader" type="Label" parent="Panel/VBox"]
+text = "Items"
+
+[node name="ItemsList" type="VBoxContainer" parent="Panel/VBox"]
+
+[node name="Spacer" type="Control" parent="Panel/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Hint" type="Label" parent="Panel/VBox"]
+text = "Press I or Esc to close"
+horizontal_alignment = 1
+modulate = Color(1, 1, 1, 0.55)

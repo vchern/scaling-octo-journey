@@ -269,11 +269,20 @@ func _try_grab_rope() -> void:
 
 func _find_overlapping_rope(allow_top_edge: bool = false) -> Area2D:
 	for rope in get_tree().get_nodes_in_group(&"ropes"):
-		if rope is Area2D and (rope as Area2D).overlaps_body(self):
-			var r := rope as Area2D
-			if not allow_top_edge and is_on_floor() and absf(global_position.y + 24.0 - r.top_position().y) < 2.0:
-				continue
-			return r
+		if not (rope is Area2D):
+			continue
+		var r := rope as Area2D
+		if allow_top_edge:
+			var feet_y: float = global_position.y + 24.0
+			var rope_top_y: float = r.top_position().y
+			if absf(global_position.x - r.global_position.x) < 24.0 and absf(feet_y - rope_top_y) < 4.0:
+				return r
+			continue
+		if not r.overlaps_body(self):
+			continue
+		if is_on_floor() and absf(global_position.y + 24.0 - r.top_position().y) < 2.0:
+			continue
+		return r
 	return null
 
 func _climb_step(_delta: float) -> void:
@@ -412,21 +421,14 @@ func _check_pickups() -> void:
 			drop.queue_free()
 
 func pick_up(item_id: String) -> void:
-	match item_id:
-		Items.COIN:
-			gold += 1
-		Items.SWORD:
-			if equipped_weapon == "":
-				equipped_weapon = Items.SWORD
-				attack_damage += sword_attack_bonus
-			else:
-				inventory[Items.SWORD] = inventory.get(Items.SWORD, 0) + 1
-		_:
-			inventory[item_id] = inventory.get(item_id, 0) + 1
-
-func _try_use_potion() -> void:
-	if not Input.is_action_just_pressed(&"use_item"):
+	if item_id == Items.COIN:
+		gold += 1
 		return
+	inventory[item_id] = inventory.get(item_id, 0) + 1
+	if item_id == Items.SWORD and equipped_weapon == "":
+		equip_weapon(Items.SWORD)
+
+func use_potion() -> void:
 	if inventory.get(Items.POTION, 0) <= 0 or hp >= max_hp:
 		return
 	inventory[Items.POTION] -= 1
@@ -434,6 +436,31 @@ func _try_use_potion() -> void:
 		inventory.erase(Items.POTION)
 	hp = min(hp + potion_heal_amount, max_hp)
 	_spawn_heal_popup()
+
+func equip_weapon(item_id: String) -> void:
+	if equipped_weapon != "":
+		return
+	if inventory.get(item_id, 0) <= 0:
+		return
+	inventory[item_id] -= 1
+	if inventory[item_id] <= 0:
+		inventory.erase(item_id)
+	equipped_weapon = item_id
+	if item_id == Items.SWORD:
+		attack_damage += sword_attack_bonus
+
+func unequip_weapon() -> void:
+	if equipped_weapon == "":
+		return
+	var item_id := equipped_weapon
+	if item_id == Items.SWORD:
+		attack_damage -= sword_attack_bonus
+	inventory[item_id] = inventory.get(item_id, 0) + 1
+	equipped_weapon = ""
+
+func _try_use_potion() -> void:
+	if Input.is_action_just_pressed(&"use_item"):
+		use_potion()
 
 func _spawn_heal_popup() -> void:
 	var scene: PackedScene = load("res://scenes/vfx/damage_number.tscn")
