@@ -1,7 +1,9 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://scenes/platforms/rope.tscn" id="2_rope"]
+[ext_resource type="PackedScene" path="res://scenes/mobs/slime.tscn" id="3_slime"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="4_hud"]
 
 [sub_resource type="RectangleShape2D" id="ShapeFloor"]
 size = Vector2(2400, 100)
@@ -119,13 +121,14 @@ polygon = PackedVector2Array(-125, -10, 125, -10, 125, 10, -125, 10)
 position = Vector2(820, 480)
 climb_length = 120.0
 
-[node name="ShortRopeTop" type="StaticBody2D" parent="."]
+[node name="ShortRopeTop" type="StaticBody2D" parent="." groups=["one_way_platforms"]]
 position = Vector2(820, 430)
-collision_layer = 2
+collision_layer = 4
 collision_mask = 0
 
 [node name="Shape" type="CollisionShape2D" parent="ShortRopeTop"]
 shape = SubResource("ShapeShortTop")
+one_way_collision = true
 
 [node name="Visual" type="Polygon2D" parent="ShortRopeTop"]
 color = Color(0.4, 0.5, 0.3, 1)
@@ -135,17 +138,23 @@ polygon = PackedVector2Array(-40, -10, 40, -10, 40, 10, -40, 10)
 position = Vector2(1850, 420)
 climb_length = 400.0
 
-[node name="TopPlatform" type="StaticBody2D" parent="."]
+[node name="TopPlatform" type="StaticBody2D" parent="." groups=["one_way_platforms"]]
 position = Vector2(1850, 230)
-collision_layer = 2
+collision_layer = 4
 collision_mask = 0
 
 [node name="Shape" type="CollisionShape2D" parent="TopPlatform"]
 shape = SubResource("ShapeTallTop")
+one_way_collision = true
 
 [node name="Visual" type="Polygon2D" parent="TopPlatform"]
 color = Color(0.5, 0.45, 0.3, 1)
 polygon = PackedVector2Array(-120, -10, 120, -10, 120, 10, -120, 10)
+
+[node name="Slime" parent="." instance=ExtResource("3_slime")]
+position = Vector2(1400, 604)
+
+[node name="HUD" parent="." instance=ExtResource("4_hud")]
 
 [node name="Player" parent="." instance=ExtResource("1_player")]
 position = Vector2(200, 596)

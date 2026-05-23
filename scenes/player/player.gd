@@ -30,6 +30,18 @@ enum State { IDLE, RUN, JUMP, FALL, CLIMB }
 @export var rope_grab_cooldown_frames: int = 6
 @export var jump_grab_lift: float = 20.0
 
+@export_group("Combat")
+@export var max_hp: int = 100
+@export var attack_damage: int = 1
+@export var attack_duration_frames: int = 12
+@export var attack_active_start_frame: int = 4
+@export var attack_active_end_frame: int = 8
+@export var attack_hitbox_offset: float = 32.0
+@export var hit_stun_frames: int = 12
+@export var i_frame_frames: int = 60
+@export var hit_knockback_horizontal: float = 250.0
+@export var hit_knockback_vertical: float = -200.0
+
 @export_group("Safety")
 @export var fall_limit: float = 900.0
 @export var respawn_position: Vector2 = Vector2(200, 596)
@@ -38,6 +50,7 @@ const ONE_WAY_LAYER_BIT := 3
 
 var state: State = State.IDLE
 var facing: int = 1
+var hp: int = 0
 var _coyote: int = 0
 var _jump_buffer: int = 0
 var _drop_through: int = 0
@@ -45,9 +58,27 @@ var _on_one_way: bool = false
 var _current_rope: Area2D = null
 var _rope_grab_cooldown: int = 0
 var _climb_left_floor: bool = false
+var _attack_timer: int = 0
+var _attack_hit_ids: Array[int] = []
+var _hit_stun: int = 0
+var _i_frames: int = 0
+
+@onready var _hurtbox: Area2D = $Hurtbox
+@onready var _hitbox: Area2D = $Hitbox
+
+func _ready() -> void:
+	hp = max_hp
 
 func _draw() -> void:
-	draw_rect(Rect2(-16, -24, 32, 48), Color(0.2, 0.4, 0.9))
+	var body_color := Color(0.2, 0.4, 0.9)
+	@warning_ignore("integer_division")
+	var flash_frame: int = _i_frames / 4
+	if _i_frames > 0 and flash_frame % 2 == 0:
+		body_color = Color(1.0, 0.6, 0.6)
+	draw_rect(Rect2(-16, -24, 32, 48), body_color)
+	if _is_in_attack_active_window():
+		var hb_x := float(facing) * attack_hitbox_offset
+		draw_rect(Rect2(hb_x - 20.0, -20.0, 40.0, 40.0), Color(1.0, 0.3, 0.3, 0.55))
 
 func _physics_process(delta: float) -> void:
 	if global_position.y > fall_limit:
@@ -56,6 +87,7 @@ func _physics_process(delta: float) -> void:
 
 	if state == State.CLIMB:
 		_climb_step(delta)
+		queue_redraw()
 		return
 
 	var input_x := Input.get_axis(&"move_left", &"move_right")
@@ -63,21 +95,37 @@ func _physics_process(delta: float) -> void:
 
 	_tick_timers(on_floor)
 	_buffer_inputs(on_floor)
+	_try_attack_input()
 	_try_grab_rope()
 	if state == State.CLIMB:
+		queue_redraw()
 		return
 
-	_apply_horizontal(input_x, on_floor, delta)
-	_apply_gravity(on_floor, delta)
-	_consume_buffered_jump()
+	var effective_input_x := input_x
+	if _attack_timer > 0 or _hit_stun > 0:
+		effective_input_x = 0.0
+
+	if _hit_stun > 0:
+		# preserve knockback, only apply gravity
+		_apply_gravity(on_floor, delta)
+	else:
+		_apply_horizontal(effective_input_x, on_floor, delta)
+		_apply_gravity(on_floor, delta)
+		_consume_buffered_jump()
+
 	move_and_slide()
 	_update_floor_type()
-	_update_state(input_x)
+	_update_state(effective_input_x)
 	_update_facing(input_x)
+	_update_hitbox_position()
+	_process_attack()
+	_check_contact_damage()
+	queue_redraw()
 
 func _respawn() -> void:
 	global_position = respawn_position
 	velocity = Vector2.ZERO
+	hp = max_hp
 	_coyote = 0
 	_jump_buffer = 0
 	_drop_through = 0
@@ -85,6 +133,10 @@ func _respawn() -> void:
 	_climb_left_floor = false
 	_on_one_way = false
 	_current_rope = null
+	_attack_timer = 0
+	_attack_hit_ids.clear()
+	_hit_stun = 0
+	_i_frames = 0
 	state = State.IDLE
 	set_collision_mask_value(ONE_WAY_LAYER_BIT, true)
 
@@ -99,6 +151,12 @@ func _tick_timers(on_floor: bool) -> void:
 
 	if _rope_grab_cooldown > 0:
 		_rope_grab_cooldown -= 1
+
+	if _hit_stun > 0:
+		_hit_stun -= 1
+
+	if _i_frames > 0:
+		_i_frames -= 1
 
 	if _drop_through > 0:
 		_drop_through -= 1
@@ -117,6 +175,20 @@ func _buffer_inputs(on_floor: bool) -> void:
 		_drop_through = drop_through_frames
 		velocity.y = max(velocity.y, 50.0)
 		_jump_buffer = 0
+
+func _try_attack_input() -> void:
+	if state == State.CLIMB:
+		return
+	if _attack_timer > 0:
+		return
+	if _hit_stun > 0:
+		return
+	if Input.is_action_just_pressed(&"attack"):
+		_start_attack()
+
+func _start_attack() -> void:
+	_attack_timer = attack_duration_frames
+	_attack_hit_ids.clear()
 
 func _apply_horizontal(input_x: float, on_floor: bool, delta: float) -> void:
 	var accel := ground_accel if on_floor else air_accel
@@ -141,24 +213,45 @@ func _consume_buffered_jump() -> void:
 func _try_grab_rope() -> void:
 	if _rope_grab_cooldown > 0:
 		return
-	if not Input.is_action_pressed(&"move_up"):
+	if _attack_timer > 0 or _hit_stun > 0:
 		return
-	var rope := _find_overlapping_rope()
+	if _drop_through > 0:
+		return
+
+	var up_pressed := Input.is_action_pressed(&"move_up")
+	var down_just := Input.is_action_just_pressed(&"move_down")
+	if not up_pressed and not down_just:
+		return
+
+	var is_top_grab_from_platform := down_just and is_on_floor()
+	var rope := _find_overlapping_rope(is_top_grab_from_platform)
 	if rope == null:
 		return
+
+	var at_top_edge := absf(global_position.y + 24.0 - rope.top_position().y) < 4.0
+	if is_top_grab_from_platform and not at_top_edge:
+		return
+
 	var was_airborne := not is_on_floor()
 	_current_rope = rope
 	state = State.CLIMB
 	global_position.x = rope.global_position.x
-	if was_airborne:
+	if was_airborne and up_pressed:
 		global_position.y = max(global_position.y - jump_grab_lift, rope.top_position().y - 24.0)
+	elif is_top_grab_from_platform:
+		set_collision_mask_value(ONE_WAY_LAYER_BIT, false)
+		_drop_through = drop_through_frames
+		global_position.y = rope.top_position().y - 24.0 + 8.0
 	velocity = Vector2.ZERO
 	_climb_left_floor = was_airborne
 
-func _find_overlapping_rope() -> Area2D:
+func _find_overlapping_rope(allow_top_edge: bool = false) -> Area2D:
 	for rope in get_tree().get_nodes_in_group(&"ropes"):
 		if rope is Area2D and (rope as Area2D).overlaps_body(self):
-			return rope as Area2D
+			var r := rope as Area2D
+			if not allow_top_edge and is_on_floor() and absf(global_position.y + 24.0 - r.top_position().y) < 2.0:
+				continue
+			return r
 	return null
 
 func _climb_step(_delta: float) -> void:
@@ -186,7 +279,10 @@ func _climb_step(_delta: float) -> void:
 		return
 
 	if global_position.y + 24.0 <= rope_top_y:
-		global_position.y = rope_top_y - 28.0
+		global_position.y = rope_top_y - 24.0
+		if _drop_through > 0:
+			_drop_through = 0
+			set_collision_mask_value(ONE_WAY_LAYER_BIT, true)
 		_release_rope(false)
 		return
 
@@ -199,10 +295,10 @@ func _climb_step(_delta: float) -> void:
 func _release_rope(with_jump: bool) -> void:
 	_current_rope = null
 	_climb_left_floor = false
+	_rope_grab_cooldown = rope_grab_cooldown_frames
 	if with_jump:
 		velocity = Vector2(facing * rope_release_horizontal, rope_release_vertical)
 		state = State.JUMP
-		_rope_grab_cooldown = rope_grab_cooldown_frames
 	else:
 		velocity = Vector2.ZERO
 		state = State.FALL
@@ -227,7 +323,83 @@ func _update_state(input_x: float) -> void:
 		state = State.IDLE
 
 func _update_facing(input_x: float) -> void:
+	if _attack_timer > 0 or _hit_stun > 0:
+		return
 	if input_x > 0.0:
 		facing = 1
 	elif input_x < 0.0:
 		facing = -1
+
+func _update_hitbox_position() -> void:
+	if _hitbox != null:
+		_hitbox.position.x = float(facing) * attack_hitbox_offset
+
+func _is_in_attack_active_window() -> bool:
+	if _attack_timer <= 0:
+		return false
+	var active_frame := attack_duration_frames - _attack_timer
+	return active_frame >= attack_active_start_frame and active_frame <= attack_active_end_frame
+
+func _process_attack() -> void:
+	if _attack_timer <= 0:
+		return
+	_attack_timer -= 1
+	if not _is_in_attack_active_window():
+		return
+	if _hitbox == null:
+		return
+	for area in _hitbox.get_overlapping_areas():
+		_try_hit_target(area)
+
+func _try_hit_target(hurtbox: Area2D) -> void:
+	var target := hurtbox.get_parent()
+	if target == null or not is_instance_valid(target):
+		return
+	if not target.is_in_group(&"enemies"):
+		return
+	var id := target.get_instance_id()
+	if id in _attack_hit_ids:
+		return
+	_attack_hit_ids.append(id)
+	if target.has_method(&"take_damage"):
+		target.take_damage(attack_damage, facing)
+
+func _check_contact_damage() -> void:
+	if _i_frames > 0:
+		return
+	if _hurtbox == null:
+		return
+	# Player hurtbox doesn't actively monitor, so query enemy hitboxes via group.
+	for enemy in get_tree().get_nodes_in_group(&"enemies"):
+		if enemy == null or not is_instance_valid(enemy):
+			continue
+		var enemy_hitbox := enemy.get_node_or_null(^"Hitbox") as Area2D
+		if enemy_hitbox == null or not enemy_hitbox.monitoring:
+			continue
+		if enemy_hitbox.overlaps_area(_hurtbox):
+			var direction := 1 if enemy.global_position.x < global_position.x else -1
+			var dmg: int = enemy.contact_damage if "contact_damage" in enemy else 10
+			take_damage(dmg, direction)
+			return
+
+func take_damage(amount: int, knockback_direction: int) -> void:
+	if _i_frames > 0:
+		return
+	hp -= amount
+	_i_frames = i_frame_frames
+	_hit_stun = hit_stun_frames
+	velocity = Vector2(float(knockback_direction) * hit_knockback_horizontal, hit_knockback_vertical)
+	_attack_timer = 0
+	_spawn_damage_number(amount)
+	if hp <= 0:
+		_respawn()
+
+func _spawn_damage_number(amount: int) -> void:
+	var scene: PackedScene = load("res://scenes/vfx/damage_number.tscn")
+	if scene == null:
+		return
+	var dn := scene.instantiate() as Node2D
+	get_parent().add_child(dn)
+	dn.global_position = global_position + Vector2(0.0, -32.0)
+	if dn.has_method(&"display"):
+		dn.display(amount, Color(1.0, 0.5, 0.5))

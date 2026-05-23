@@ -1,17 +1,17 @@
 [gd_scene load_steps=5 format=3]
 
-[ext_resource type="Script" path="res://scenes/player/player.gd" id="1_script"]
+[ext_resource type="Script" path="res://scenes/mobs/slime.gd" id="1_script"]
 
 [sub_resource type="RectangleShape2D" id="BodyShape"]
-size = Vector2(32, 48)
+size = Vector2(32, 32)
 
 [sub_resource type="RectangleShape2D" id="HurtboxShape"]
-size = Vector2(32, 48)
+size = Vector2(32, 32)
 
 [sub_resource type="RectangleShape2D" id="HitboxShape"]
-size = Vector2(40, 40)
+size = Vector2(32, 32)
 
-[node name="Player" type="CharacterBody2D" groups=["player"]]
+[node name="Slime" type="CharacterBody2D" groups=["enemies"]]
 collision_layer = 1
 collision_mask = 6
 script = ExtResource("1_script")
@@ -19,18 +19,8 @@ script = ExtResource("1_script")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("BodyShape")
 
-[node name="Camera2D" type="Camera2D" parent="."]
-position_smoothing_enabled = true
-position_smoothing_speed = 6.0
-drag_horizontal_enabled = true
-drag_vertical_enabled = true
-drag_left_margin = 0.2
-drag_right_margin = 0.2
-drag_top_margin = 0.15
-drag_bottom_margin = 0.15
-
 [node name="Hurtbox" type="Area2D" parent="."]
-collision_layer = 8
+collision_layer = 16
 collision_mask = 0
 monitorable = true
 monitoring = false
@@ -39,11 +29,10 @@ monitoring = false
 shape = SubResource("HurtboxShape")
 
 [node name="Hitbox" type="Area2D" parent="."]
-collision_layer = 0
-collision_mask = 16
+collision_layer = 64
+collision_mask = 8
 monitorable = false
 monitoring = true
-position = Vector2(32, 0)
 
 [node name="HitboxShape" type="CollisionShape2D" parent="Hitbox"]
 shape = SubResource("HitboxShape")
