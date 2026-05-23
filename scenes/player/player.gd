@@ -1,5 +1,7 @@
 extends CharacterBody2D
 
+const Items = preload("res://scripts/globals/items.gd")
+
 enum State { IDLE, RUN, JUMP, FALL, CLIMB }
 
 @export_group("Movement")
@@ -48,6 +50,11 @@ enum State { IDLE, RUN, JUMP, FALL, CLIMB }
 @export var hp_per_level: int = 10
 @export var attack_per_level: int = 1
 
+@export_group("Inventory")
+@export var pickup_radius: float = 28.0
+@export var sword_attack_bonus: int = 5
+@export var potion_heal_amount: int = 30
+
 @export_group("Safety")
 @export var fall_limit: float = 900.0
 @export var respawn_position: Vector2 = Vector2(200, 596)
@@ -59,6 +66,9 @@ var facing: int = 1
 var hp: int = 0
 var level: int = 1
 var xp: int = 0
+var gold: int = 0
+var inventory: Dictionary = {}
+var equipped_weapon: String = ""
 var _coyote: int = 0
 var _jump_buffer: int = 0
 var _drop_through: int = 0
@@ -95,6 +105,8 @@ func _physics_process(delta: float) -> void:
 
 	if state == State.CLIMB:
 		_climb_step(delta)
+		_check_pickups()
+		_try_use_potion()
 		queue_redraw()
 		return
 
@@ -104,8 +116,10 @@ func _physics_process(delta: float) -> void:
 	_tick_timers(on_floor)
 	_buffer_inputs(on_floor)
 	_try_attack_input()
+	_try_use_potion()
 	_try_grab_rope()
 	if state == State.CLIMB:
+		_check_pickups()
 		queue_redraw()
 		return
 
@@ -127,6 +141,7 @@ func _physics_process(delta: float) -> void:
 	_update_hitbox_position()
 	_process_attack()
 	_check_contact_damage()
+	_check_pickups()
 	queue_redraw()
 
 func _respawn() -> void:
@@ -387,6 +402,48 @@ func _check_contact_damage() -> void:
 			var dmg: int = enemy.contact_damage if "contact_damage" in enemy else 10
 			take_damage(dmg, direction)
 			return
+
+func _check_pickups() -> void:
+	for drop in get_tree().get_nodes_in_group(&"drops"):
+		if not is_instance_valid(drop):
+			continue
+		if drop.global_position.distance_to(global_position) < pickup_radius:
+			pick_up(drop.item_id)
+			drop.queue_free()
+
+func pick_up(item_id: String) -> void:
+	match item_id:
+		Items.COIN:
+			gold += 1
+		Items.SWORD:
+			if equipped_weapon == "":
+				equipped_weapon = Items.SWORD
+				attack_damage += sword_attack_bonus
+			else:
+				inventory[Items.SWORD] = inventory.get(Items.SWORD, 0) + 1
+		_:
+			inventory[item_id] = inventory.get(item_id, 0) + 1
+
+func _try_use_potion() -> void:
+	if not Input.is_action_just_pressed(&"use_item"):
+		return
+	if inventory.get(Items.POTION, 0) <= 0 or hp >= max_hp:
+		return
+	inventory[Items.POTION] -= 1
+	if inventory[Items.POTION] <= 0:
+		inventory.erase(Items.POTION)
+	hp = min(hp + potion_heal_amount, max_hp)
+	_spawn_heal_popup()
+
+func _spawn_heal_popup() -> void:
+	var scene: PackedScene = load("res://scenes/vfx/damage_number.tscn")
+	if scene == null:
+		return
+	var popup := scene.instantiate() as Node2D
+	get_parent().add_child(popup)
+	popup.global_position = global_position + Vector2(0.0, -36.0)
+	if popup.has_method(&"display_text"):
+		popup.display_text("+%d" % potion_heal_amount, Color(0.4, 1.0, 0.5))
 
 func take_damage(amount: int, knockback_direction: int) -> void:
 	if _i_frames > 0:

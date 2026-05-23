@@ -1,5 +1,7 @@
 extends CharacterBody2D
 
+const Items = preload("res://scripts/globals/items.gd")
+
 @export var max_hp: int = 3
 @export var move_speed: float = 60.0
 @export var contact_damage: int = 10
@@ -11,6 +13,10 @@ extends CharacterBody2D
 @export var death_fade_seconds: float = 0.5
 @export var respawn_seconds: float = 3.0
 @export var xp_reward: int = 10
+
+@export_group("Drops")
+@export var drop_potion_chance: float = 0.25
+@export var drop_sword_chance: float = 0.10
 
 var hp: int = 0
 var _facing: int = 1
@@ -107,6 +113,7 @@ func _die() -> void:
 	if _hitbox != null:
 		_hitbox.monitoring = false
 	_award_xp()
+	_spawn_drops()
 	var tween := create_tween()
 	tween.tween_property(self, "modulate:a", 0.0, death_fade_seconds)
 	tween.tween_callback(_on_fade_complete)
@@ -115,6 +122,23 @@ func _award_xp() -> void:
 	var player := get_tree().get_first_node_in_group(&"player")
 	if player != null and player.has_method(&"gain_xp"):
 		player.gain_xp(xp_reward)
+
+func _spawn_drops() -> void:
+	_spawn_drop(Items.COIN)
+	if randf() < drop_potion_chance:
+		_spawn_drop(Items.POTION)
+	if randf() < drop_sword_chance:
+		_spawn_drop(Items.SWORD)
+
+func _spawn_drop(item_id: String) -> void:
+	var scene: PackedScene = load("res://scenes/items/drop.tscn")
+	if scene == null:
+		return
+	var drop := scene.instantiate() as Node2D
+	get_parent().add_child(drop)
+	drop.global_position = global_position
+	if drop.has_method(&"setup"):
+		drop.setup(item_id)
 
 func _on_fade_complete() -> void:
 	_dead = true

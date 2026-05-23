@@ -9,6 +9,7 @@ func _ready() -> void:
 	_register(&"attack", [KEY_Z, KEY_J])
 	_register(&"skill_1", [KEY_X, KEY_K])
 	_register(&"skill_2", [KEY_C, KEY_L])
+	_register(&"use_item", [KEY_U])
 
 func _register(action: StringName, keys: Array) -> void:
 	if InputMap.has_action(action):
