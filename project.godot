@@ -18,6 +18,8 @@ config/features=PackedStringArray("4.6", "GL Compatibility")
 [autoload]
 
 InputBindings="*res://scripts/globals/input_bindings.gd"
+Transition="*res://scripts/globals/transition.gd"
+FadeOverlay="*res://scenes/ui/fade_overlay.tscn"
 
 [display]
 

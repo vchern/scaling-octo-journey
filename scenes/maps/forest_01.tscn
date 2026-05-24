@@ -1,5 +1,6 @@
-[gd_scene load_steps=16 format=3]
+[gd_scene load_steps=18 format=3]
 
+[ext_resource type="Script" path="res://scenes/maps/map.gd" id="0_map"]
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://scenes/platforms/rope.tscn" id="2_rope"]
 [ext_resource type="PackedScene" path="res://scenes/mobs/slime.tscn" id="3_slime"]
@@ -7,6 +8,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/inventory_panel.tscn" id="5_inventory"]
 [ext_resource type="PackedScene" path="res://scenes/mobs/bat.tscn" id="6_bat"]
 [ext_resource type="PackedScene" path="res://scenes/mobs/boss_slime.tscn" id="7_boss_slime"]
+[ext_resource type="PackedScene" path="res://scenes/portals/portal.tscn" id="8_portal"]
 
 [sub_resource type="RectangleShape2D" id="ShapeFloor"]
 size = Vector2(2400, 100)
@@ -30,6 +32,7 @@ size = Vector2(80, 20)
 size = Vector2(240, 20)
 
 [node name="Forest01" type="Node2D"]
+script = ExtResource("0_map")
 
 [node name="SkyBg" type="Polygon2D" parent="."]
 color = Color(0.55, 0.75, 0.95, 1)
@@ -162,6 +165,11 @@ position = Vector2(700, 350)
 
 [node name="BossSlime" parent="." instance=ExtResource("7_boss_slime")]
 position = Vector2(2200, 604)
+
+[node name="PortalToCave" parent="." instance=ExtResource("8_portal")]
+position = Vector2(2280, 580)
+target_scene_path = "res://scenes/maps/cave_01.tscn"
+arrival_position = Vector2(1180, 596)
 
 [node name="HUD" parent="." instance=ExtResource("4_hud")]
 

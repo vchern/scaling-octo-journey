@@ -1,0 +1,100 @@
+[gd_scene load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://scenes/maps/map.gd" id="1_map"]
+[ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_player"]
+[ext_resource type="PackedScene" path="res://scenes/platforms/rope.tscn" id="3_rope"]
+[ext_resource type="PackedScene" path="res://scenes/mobs/slime.tscn" id="4_slime"]
+[ext_resource type="PackedScene" path="res://scenes/mobs/bat.tscn" id="5_bat"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="6_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/inventory_panel.tscn" id="7_inventory"]
+[ext_resource type="PackedScene" path="res://scenes/portals/portal.tscn" id="8_portal"]
+
+[sub_resource type="RectangleShape2D" id="ShapeFloor"]
+size = Vector2(1280, 100)
+
+[sub_resource type="RectangleShape2D" id="ShapeWall"]
+size = Vector2(32, 140)
+
+[sub_resource type="RectangleShape2D" id="ShapePlatform"]
+size = Vector2(200, 20)
+
+[sub_resource type="RectangleShape2D" id="ShapePortal"]
+size = Vector2(48, 80)
+
+[node name="Cave01" type="Node2D"]
+script = ExtResource("1_map")
+
+[node name="Background" type="Polygon2D" parent="."]
+color = Color(0.15, 0.16, 0.22, 1)
+polygon = PackedVector2Array(-100, -100, 1380, -100, 1380, 800, -100, 800)
+
+[node name="Floor" type="StaticBody2D" parent="."]
+position = Vector2(640, 670)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Floor"]
+shape = SubResource("ShapeFloor")
+
+[node name="Visual" type="Polygon2D" parent="Floor"]
+color = Color(0.2, 0.16, 0.12, 1)
+polygon = PackedVector2Array(-640, -50, 640, -50, 640, 50, -640, 50)
+
+[node name="LeftWall" type="StaticBody2D" parent="."]
+position = Vector2(16, 550)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="LeftWall"]
+shape = SubResource("ShapeWall")
+
+[node name="Visual" type="Polygon2D" parent="LeftWall"]
+color = Color(0.25, 0.2, 0.18, 1)
+polygon = PackedVector2Array(-16, -70, 16, -70, 16, 70, -16, 70)
+
+[node name="RightWall" type="StaticBody2D" parent="."]
+position = Vector2(1264, 550)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="RightWall"]
+shape = SubResource("ShapeWall")
+
+[node name="Visual" type="Polygon2D" parent="RightWall"]
+color = Color(0.25, 0.2, 0.18, 1)
+polygon = PackedVector2Array(-16, -70, 16, -70, 16, 70, -16, 70)
+
+[node name="Platform" type="StaticBody2D" parent="." groups=["one_way_platforms"]]
+position = Vector2(640, 410)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platform"]
+shape = SubResource("ShapePlatform")
+one_way_collision = true
+
+[node name="Visual" type="Polygon2D" parent="Platform"]
+color = Color(0.3, 0.4, 0.25, 1)
+polygon = PackedVector2Array(-100, -10, 100, -10, 100, 10, -100, 10)
+
+[node name="Rope" parent="." instance=ExtResource("3_rope")]
+position = Vector2(640, 510)
+climb_length = 220.0
+
+[node name="Slime" parent="." instance=ExtResource("4_slime")]
+position = Vector2(320, 604)
+
+[node name="Bat" parent="." instance=ExtResource("5_bat")]
+position = Vector2(900, 350)
+
+[node name="PortalToForest" parent="." instance=ExtResource("8_portal")]
+position = Vector2(1180, 580)
+target_scene_path = "res://scenes/maps/forest_01.tscn"
+arrival_position = Vector2(2280, 596)
+
+[node name="HUD" parent="." instance=ExtResource("6_hud")]
+
+[node name="InventoryPanel" parent="." instance=ExtResource("7_inventory")]
+
+[node name="Player" parent="." instance=ExtResource("2_player")]
+position = Vector2(1180, 596)

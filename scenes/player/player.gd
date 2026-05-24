@@ -60,6 +60,7 @@ enum State { IDLE, RUN, JUMP, FALL, CLIMB }
 @export var respawn_position: Vector2 = Vector2(200, 596)
 
 const ONE_WAY_LAYER_BIT := 3
+const SAVE_PATH := "user://save.json"
 
 var state: State = State.IDLE
 var facing: int = 1
@@ -85,6 +86,7 @@ var _i_frames: int = 0
 @onready var _hitbox: Area2D = $Hitbox
 
 func _ready() -> void:
+	load_state()
 	hp = max_hp
 
 func _draw() -> void:
@@ -99,6 +101,10 @@ func _draw() -> void:
 		draw_rect(Rect2(hb_x - 20.0, -20.0, 40.0, 40.0), Color(1.0, 0.3, 0.3, 0.55))
 
 func _physics_process(delta: float) -> void:
+	if Input.is_action_just_pressed(&"reset_save"):
+		reset_save()
+		return
+
 	if global_position.y > fall_limit:
 		_respawn()
 		return
@@ -423,10 +429,13 @@ func _check_pickups() -> void:
 func pick_up(item_id: String) -> void:
 	if item_id == Items.COIN:
 		gold += 1
+		save_state()
 		return
 	inventory[item_id] = inventory.get(item_id, 0) + 1
 	if item_id == Items.SWORD and equipped_weapon == "":
 		equip_weapon(Items.SWORD)
+		return
+	save_state()
 
 func use_potion() -> void:
 	if inventory.get(Items.POTION, 0) <= 0 or hp >= max_hp:
@@ -436,6 +445,7 @@ func use_potion() -> void:
 		inventory.erase(Items.POTION)
 	hp = min(hp + potion_heal_amount, max_hp)
 	_spawn_heal_popup()
+	save_state()
 
 func equip_weapon(item_id: String) -> void:
 	if equipped_weapon != "":
@@ -448,6 +458,7 @@ func equip_weapon(item_id: String) -> void:
 	equipped_weapon = item_id
 	if item_id == Items.SWORD:
 		attack_damage += sword_attack_bonus
+	save_state()
 
 func unequip_weapon() -> void:
 	if equipped_weapon == "":
@@ -457,6 +468,7 @@ func unequip_weapon() -> void:
 		attack_damage -= sword_attack_bonus
 	inventory[item_id] = inventory.get(item_id, 0) + 1
 	equipped_weapon = ""
+	save_state()
 
 func _try_use_potion() -> void:
 	if Input.is_action_just_pressed(&"use_item"):
@@ -509,6 +521,7 @@ func _level_up() -> void:
 	attack_damage += attack_per_level
 	hp = max_hp
 	_spawn_level_up_popup()
+	save_state()
 
 func _spawn_level_up_popup() -> void:
 	var scene: PackedScene = load("res://scenes/vfx/damage_number.tscn")
@@ -519,3 +532,52 @@ func _spawn_level_up_popup() -> void:
 	popup.global_position = global_position + Vector2(0.0, -40.0)
 	if popup.has_method(&"display_text"):
 		popup.display_text("LEVEL UP!", Color(1.0, 0.85, 0.2))
+
+func save_state() -> void:
+	var data := {
+		"level": level,
+		"xp": xp,
+		"gold": gold,
+		"inventory": inventory,
+		"equipped_weapon": equipped_weapon,
+		"max_hp": max_hp,
+		"attack_damage": attack_damage,
+	}
+	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	if f == null:
+		return
+	f.store_string(JSON.stringify(data))
+	f.close()
+
+func load_state() -> void:
+	if not FileAccess.file_exists(SAVE_PATH):
+		return
+	var f := FileAccess.open(SAVE_PATH, FileAccess.READ)
+	if f == null:
+		return
+	var text := f.get_as_text()
+	f.close()
+	var parsed: Variant = JSON.parse_string(text)
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return
+	var data: Dictionary = parsed
+	level = int(data.get("level", level))
+	xp = int(data.get("xp", xp))
+	gold = int(data.get("gold", gold))
+	equipped_weapon = data.get("equipped_weapon", equipped_weapon)
+	max_hp = int(data.get("max_hp", max_hp))
+	attack_damage = int(data.get("attack_damage", attack_damage))
+	inventory.clear()
+	var inv_raw: Dictionary = data.get("inventory", {})
+	for key in inv_raw:
+		inventory[key] = int(inv_raw[key])
+
+func reset_save() -> void:
+	if FileAccess.file_exists(SAVE_PATH):
+		DirAccess.remove_absolute(SAVE_PATH)
+	Transition.clear()
+	var main_scene: String = ProjectSettings.get_setting("application/run/main_scene", "")
+	if main_scene != "":
+		get_tree().change_scene_to_file(main_scene)
+	else:
+		get_tree().reload_current_scene()

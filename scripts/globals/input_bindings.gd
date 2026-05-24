@@ -5,12 +5,13 @@ func _ready() -> void:
 	_register(&"move_right", [KEY_RIGHT, KEY_D])
 	_register(&"move_up", [KEY_UP, KEY_W])
 	_register(&"move_down", [KEY_DOWN, KEY_S])
-	_register(&"jump", [KEY_SPACE])
-	_register(&"attack", [KEY_Z, KEY_J])
+	_register(&"jump", [KEY_SPACE, KEY_ALT])
+	_register(&"attack", [KEY_CTRL, KEY_J])
 	_register(&"skill_1", [KEY_X, KEY_K])
 	_register(&"skill_2", [KEY_C, KEY_L])
 	_register(&"use_item", [KEY_U])
 	_register(&"toggle_inventory", [KEY_I])
+	_register(&"reset_save", [KEY_F8])
 
 func _register(action: StringName, keys: Array) -> void:
 	if InputMap.has_action(action):
